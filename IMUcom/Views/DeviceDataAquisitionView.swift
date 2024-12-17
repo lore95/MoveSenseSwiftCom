@@ -40,7 +40,7 @@ struct DataAcquisitionView: View {
 
             // Real-time Data Plot
             VStack {
-                Text("Live Data Plot")
+                Text("Live Angle Plot")
                     .font(.headline)
                     .padding(.bottom, 10)
                 DataPlotView(dataPoints: dataModel.angleDataPoints)

@@ -1,17 +1,20 @@
-import Foundation
 import CoreBluetooth
+import Foundation
 
-class DeviceManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+class DeviceManager: NSObject, ObservableObject, CBCentralManagerDelegate,
+    CBPeripheralDelegate
+{
     static let shared = DeviceManager()
     let dataProcessor = DataManipulationController()
-
+    
     private var centralManager: CBCentralManager!
     private(set) var discoveredDevices: [CBPeripheral] = []
     @Published var pairedDevices: [CBPeripheral] = []
     
-    let moveSenseServiceUUID = CBUUID(string: "34802252-7185-4d5d-b431-630e7050e8f0")
-    private let GATTService = CBUUID(string: "34802252-7185-4d5d-b431-630e7050e8f0")
-
+    let moveSenseServiceUUID = CBUUID(
+        string: "34802252-7185-4d5d-b431-630e7050e8f0")
+    private let GATTService = CBUUID(
+        string: "34802252-7185-4d5d-b431-630e7050e8f0")
     
     @Published var isScanning = false
     
@@ -44,19 +47,40 @@ class DeviceManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPer
         }
     }
     
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
-        if !discoveredDevices.contains(peripheral) {
-            discoveredDevices.append(peripheral)
-            objectWillChange.send()
+    func centralManager(
+        _ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
+        advertisementData: [String: Any], rssi RSSI: NSNumber
+    ) {
+        if let deviceName = advertisementData[CBAdvertisementDataLocalNameKey]
+            as? String
+        {
+            // Check if the name starts with "movesense" ignoring case
+            if deviceName.lowercased().hasPrefix("movesense") {
+                if !discoveredDevices.contains(peripheral) {
+                    discoveredDevices.append(peripheral)
+                    objectWillChange.send()
+                }
+            }
         }
     }
     
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+    func centralManager(
+        _ central: CBCentralManager, didConnect peripheral: CBPeripheral
+    ) {
         pairedDevices.append(peripheral)
         objectWillChange.send()
         peripheral.discoverServices(nil)
         central.scanForPeripherals(withServices: [GATTService], options: nil)
-    
+        
         print("Connected to \(peripheral.name ?? "Unknown Device")")
+    }
+    
+    func disconnectAllDevices() {
+        for peripheral in pairedDevices {
+            centralManager.cancelPeripheralConnection(peripheral)
+            print("Disconnected from \(peripheral.name ?? "Unknown Device")")
+        }
+        pairedDevices.removeAll() // Clear connected peripherals
+        objectWillChange.send()
     }
 }

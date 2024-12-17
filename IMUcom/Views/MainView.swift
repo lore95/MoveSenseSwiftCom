@@ -7,6 +7,7 @@ struct MainView: View {
     @State private var showFoundDevices = false
     @State private var searchStatusMessage = "Search for devices"
     @State private var showNoDeviceFound = false
+    @State private var showResults = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -54,13 +55,21 @@ struct MainView: View {
                         .font(Font.custom("Montserrat-Bold", size: 20))
                         .foregroundColor(.gray)
                         .padding(.bottom, 20)
+                    Button("Results") {
+                        showResults = true
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: geometry.size.height / 3) // Fixed bottom 1/3 height
                 .background(Color.clear)
             }
-            .sheet(isPresented: $showFoundDevices) {
+            .sheet(isPresented: $showFoundDevices, onDismiss: {
+                deviceManager.disconnectAllDevices()
+            }) {
                 FoundDevicesView(onDeviceSelected: stopSearch)
+            }
+            .sheet(isPresented: $showResults) {
+                ResultsView()
             }
         }
     }
