@@ -2,6 +2,8 @@ import SwiftUI
 
 struct DataAcquisitionView: View {
     @ObservedObject var dataModel: DataAquisitionModel
+    @State private var showResultsView = false // State to navigate to ResultsView
+
     var deviceName: String
 
     var body: some View {
@@ -26,11 +28,13 @@ struct DataAcquisitionView: View {
                         dataModel.stopRecording()
                     }
                 }) {
-                    Text(dataModel.isRecording ? "Stop" : "Start Recording Data")
-                        .foregroundColor(.white)
-                        .frame(width: 200, height: 50)
-                        .background(dataModel.isRecording ? Color.red : Color.green)
-                        .cornerRadius(10)
+                    Text(
+                        dataModel.isRecording ? "Stop" : "Start Recording Data"
+                    )
+                    .foregroundColor(.white)
+                    .frame(width: 200, height: 50)
+                    .background(dataModel.isRecording ? Color.red : Color.green)
+                    .cornerRadius(10)
                 }
             }
 
@@ -44,6 +48,21 @@ struct DataAcquisitionView: View {
                     .border(Color.gray, width: 1)
             }
             .padding()
+
+            Spacer()
+            // Button to Open ResultsView
+            Button(action: {
+                showResultsView.toggle()
+            }) {
+                Text("View Results")
+                    .foregroundColor(.white)
+                    .frame(width: 200, height: 50)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+            }
+            .fullScreenCover(isPresented: $showResultsView) {
+                ResultsView()  // Present the ResultsView
+            }
 
             Spacer()
         }

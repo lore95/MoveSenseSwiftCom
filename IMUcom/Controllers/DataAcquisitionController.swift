@@ -1,12 +1,20 @@
 import CoreBluetooth
 import Foundation
+import CoreData
 
 class DataAquisitionModel: NSObject, ObservableObject, CBPeripheralDelegate {
     // MARK: - Properties
-    @Published var rawDataPoints: [Float] = []
+    @Published var XrawDataPoints: [Float] = []
+    @Published var YrawDataPoints: [Float] = []
+    @Published var ZrawDataPoints: [Float] = []
+    @Published var XfilteredDataPoints: [Float] = []
+    @Published var YfilteredDataPoints: [Float] = []
+    @Published var ZfilteredDataPoints: [Float] = []
     @Published var angleDataPoints: [Float] = []
-    @Published var filteredDataPoints: [Float] = []
+    
+
     @Published var isRecording = false
+    private var csvRows: [CSVModel] = []             // Array to hold CSV rows
 
     let dataProcessor = DataManipulationController()
 
@@ -67,13 +75,17 @@ class DataAquisitionModel: NSObject, ObservableObject, CBPeripheralDelegate {
                 }
             }
         }
-
+        generateCSVData()
+        saveJSONToFile()
         // Clear data points or stop any timers if needed
         DispatchQueue.main.async {
-            self.rawDataPoints.removeAll()
+            self.XrawDataPoints.removeAll()
+            self.YrawDataPoints.removeAll()
+            self.ZrawDataPoints.removeAll()
+            self.XfilteredDataPoints.removeAll()
+            self.YfilteredDataPoints.removeAll()
+            self.ZfilteredDataPoints.removeAll()
             self.angleDataPoints.removeAll()
-            self.filteredDataPoints.removeAll()
-
         }
     }
     // MARK: - Command Handling
@@ -215,6 +227,12 @@ class DataAquisitionModel: NSObject, ObservableObject, CBPeripheralDelegate {
                 //print("pitch : " + String(angle3d.pitch))
                 if isRecording
                 {
+                    XrawDataPoints.append(Xacc)
+                    YrawDataPoints.append(Yacc)
+                    ZrawDataPoints.append(Zacc)
+                    XfilteredDataPoints.append(filteredData.filteredX)
+                    YfilteredDataPoints.append(filteredData.filteredY)
+                    ZfilteredDataPoints.append(filteredData.filteredZ)
                     angleDataPoints.append(angle3d.tiltAngle)
                 }
             }
@@ -307,4 +325,76 @@ class DataAquisitionModel: NSObject, ObservableObject, CBPeripheralDelegate {
     public func updateIsRecording(){
         isRecording.toggle()
     }
+    
+    private func generateCSVData() {
+           csvRows.removeAll() // Clear any previous data
+
+           let count = XrawDataPoints.count
+
+           for i in 0..<count {
+               let rawX = String(format: "%.3f", XrawDataPoints[i])
+               let rawY = String(format: "%.3f", YrawDataPoints[i])
+               let rawZ = String(format: "%.3f", ZrawDataPoints[i])
+               let filteredX = String(format: "%.3f", XfilteredDataPoints[i])
+               let filteredY = String(format: "%.3f", YfilteredDataPoints[i])
+               let filteredZ = String(format: "%.3f", ZfilteredDataPoints[i])
+               let angle = String(format: "%.3f", angleDataPoints[i])
+
+               let csvRow = CSVModel(
+                   accX: rawX,
+                   accY: rawY,  // Replace with real data if available
+                   accZ: rawZ,  // Replace with real data if available
+                   filteredAccX: filteredX,
+                   filteredAccY: filteredY, // Replace with real data if available
+                   filteredAccZ: filteredZ, // Replace with real data if available
+                   computedAngle: angle
+               )
+               csvRows.append(csvRow)
+           }
+           print("CSV Data Prepared: \(csvRows.count) rows")
+       }
+
+    private func saveJSONToFile() {
+        let fileName = generateFileName()
+        let fileURL = getDocumentsDirectory().appendingPathComponent(fileName)
+
+        // Encode `csvRows` to JSON
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted // For readable JSON
+        do {
+            let jsonData = try encoder.encode(csvRows)
+            try jsonData.write(to: fileURL, options: .atomic)
+            print("JSON saved successfully to \(fileURL)")
+        } catch {
+            print("Error saving JSON file: \(error.localizedDescription)")
+        }
+    }
+
+    /// Get the app's Document Directory path
+    private func getDocumentsDirectory() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+    
+    private func loadJSONFromFile() {
+        let fileName = "imu_data.json" // File name
+        let fileURL = getDocumentsDirectory().appendingPathComponent(fileName)
+
+        let decoder = JSONDecoder()
+        do {
+            let jsonData = try Data(contentsOf: fileURL)
+            csvRows = try decoder.decode([CSVModel].self, from: jsonData)
+            print("JSON loaded successfully. Row count: \(csvRows.count)")
+        } catch {
+            print("Error loading JSON file: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Generates a unique file name using the current date and time
+    private func generateFileName() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        let dateString = formatter.string(from: Date())
+        return "\(dateString)_imu_data.json"
+    }
+
 }
