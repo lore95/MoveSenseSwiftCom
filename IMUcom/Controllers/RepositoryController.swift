@@ -43,6 +43,21 @@ class RepositoryController: ObservableObject {
         tableData = []
     }
 
+    /// Delete a file and update the list
+    func deleteFile(file: URL) {
+        let fileManager = FileManager.default
+        do {
+            try fileManager.removeItem(at: file)
+            files.removeAll { $0 == file }
+            if selectedFile == file {
+                deselectFile()
+            }
+            print("File deleted successfully.")
+        } catch {
+            print("Error deleting file: \(error.localizedDescription)")
+        }
+    }
+
     /// Get Documents Directory Path
     private func getDocumentsDirectory() -> URL {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!

@@ -3,6 +3,9 @@ import SwiftUI
 struct ResultsView: View {
     @Environment(\.dismiss) var dismiss // Dismiss the view
     @StateObject private var repository = RepositoryController() // Initialize RepositoryController
+    
+    @State private var fileToDelete: URL? = nil // Track file to delete
+    @State private var showDeleteConfirmation = false // Control alert visibility
 
     var body: some View {
         NavigationView {
@@ -24,6 +27,15 @@ struct ResultsView: View {
                             .cornerRadius(8)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .contextMenu {
+                            // Context menu for delete action
+                            Button(role: .destructive) {
+                                fileToDelete = file
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
                 .listStyle(PlainListStyle())
@@ -91,6 +103,14 @@ struct ResultsView: View {
                 }
             }
             .navigationTitle("Available Documents")
+            .alert("Delete File?", isPresented: $showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    deleteFile()
+                }
+            } message: {
+                Text("Are you sure you want to delete \(fileToDelete?.lastPathComponent ?? "this file")?")
+            }
         }
     }
 
@@ -101,5 +121,12 @@ struct ResultsView: View {
         } else {
             repository.loadFileContent(file: file)
         }
+    }
+
+    // MARK: - Delete File
+    private func deleteFile() {
+        guard let fileToDelete = fileToDelete else { return }
+        repository.deleteFile(file: fileToDelete)
+        self.fileToDelete = nil
     }
 }
