@@ -2,7 +2,8 @@ import SwiftUI
 
 struct DataAcquisitionView: View {
     @ObservedObject var dataModel: DataAquisitionModel
-    @State private var showResultsView = false // State to navigate to ResultsView
+    @State private var showResultsView = false  // State to navigate to ResultsView
+    @State private var showPlotView = false  // State to navigate to ResultsView
 
     var deviceName: String
 
@@ -25,7 +26,7 @@ struct DataAcquisitionView: View {
                         dataModel.startRecording()
                         startPrintingData()
                     } else {
-                        dataModel.stopRecording()
+                        showPlotView.toggle()
                     }
                 }) {
                     Text(
@@ -62,6 +63,9 @@ struct DataAcquisitionView: View {
             }
             .fullScreenCover(isPresented: $showResultsView) {
                 ResultsView()  // Present the ResultsView
+            }
+            .fullScreenCover(isPresented: $showPlotView) {
+                PlotAndSaveView(dataModel: dataModel)
             }
 
             Spacer()

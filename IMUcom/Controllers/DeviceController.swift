@@ -83,4 +83,16 @@ class DeviceManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         pairedDevices.removeAll() // Clear connected peripherals
         objectWillChange.send()
     }
+    func peripheral(_ peripheral: CBPeripheral, didModifyServices invalidatedServices: [CBService]) {
+        print("Services modified: \(invalidatedServices)")
+
+        // Check connection state
+        if peripheral.state != .connected {
+            print("Peripheral disconnected, attempting to reconnect...")
+            centralManager.connect(peripheral, options: nil)
+        } else {
+            // Rediscover services if still connected
+            peripheral.discoverServices(nil)
+        }
+    }
 }

@@ -11,7 +11,8 @@ class DataAquisitionModel: NSObject, ObservableObject, CBPeripheralDelegate {
     @Published var YfilteredDataPoints: [Float] = []
     @Published var ZfilteredDataPoints: [Float] = []
     @Published var angleDataPoints: [Float] = []
-    
+    @Published var isToSave = false
+
 
     @Published var isRecording = false
     private var csvRows: [CSVModel] = []             // Array to hold CSV rows
@@ -75,8 +76,12 @@ class DataAquisitionModel: NSObject, ObservableObject, CBPeripheralDelegate {
                 }
             }
         }
-        generateCSVData()
-        saveJSONToFile()
+        if isToSave
+        {
+            generateCSVData()
+            saveJSONToFile()
+        }
+        isToSave = false
         // Clear data points or stop any timers if needed
         DispatchQueue.main.async {
             self.XrawDataPoints.removeAll()
