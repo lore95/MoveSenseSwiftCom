@@ -24,6 +24,8 @@ struct PlotAndSaveView: View {
                 Button(action: {
                     dataModel.isToSave = true
                     dataModel.stopRecording()
+                    presentationMode.wrappedValue.dismiss()
+
                 }) {
                     Text("Save")
                         .foregroundColor(.white)
